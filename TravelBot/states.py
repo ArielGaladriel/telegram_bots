@@ -7,3 +7,9 @@ class City(StatesGroup):
 
 class Country(StatesGroup):
     country = State()
+
+
+class Transliteration(StatesGroup):
+    armenianeastern = State()
+    armenianwestern = State()
+    georgian = State()

@@ -15,7 +15,7 @@ city_choice = InlineKeyboardMarkup(inline_keyboard=[
  ])
 
 
-currency_choise = InlineKeyboardMarkup(inline_keyboard=[
+currency_choice = InlineKeyboardMarkup(inline_keyboard=[
      [
          InlineKeyboardButton(text="RUB-AMD", callback_data='currency_rub_amd'),
          InlineKeyboardButton(text="USD-RUB", callback_data='currency_usd_rub'),
@@ -28,6 +28,20 @@ currency_choise = InlineKeyboardMarkup(inline_keyboard=[
      ],
      [
          InlineKeyboardButton(text="Other", callback_data='other_currency')
+     ],
+     [
+         InlineKeyboardButton(text="Back", callback_data="back")
+     ]
+ ])
+
+
+transliteration = InlineKeyboardMarkup(inline_keyboard=[
+     [
+         InlineKeyboardButton(text="Armenian(Eastern)", callback_data='armenianeastern_transliteration'),
+         InlineKeyboardButton(text="Armenian(Western)", callback_data='armenianwestern_transliteration')
+     ],
+     [
+         InlineKeyboardButton(text="Georgian", callback_data="georgian_transliteration")
      ],
      [
          InlineKeyboardButton(text="Back", callback_data="back")

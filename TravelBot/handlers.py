@@ -7,7 +7,8 @@ from aiogram import Bot, Dispatcher, executor, types
 from aiogram.dispatcher import FSMContext
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
-from TravelBot.keybords import city_choice, currency_choise
+from keybords import city_choice, currency_choice, transliteration
+from functions import armenian_transliteration_eastern, armenian_transliteration_western, georgian_transliteration
 
 logging.basicConfig(level=logging.INFO)
 bot = Bot(token=config.BOT_TOKEN)
@@ -40,14 +41,14 @@ async def weather_preset_option(call: types.CallbackQuery):
     """
     async with aiohttp.ClientSession() as session:
         async with session.get(config.WEATHER_API.format(call.data.split("_")[1])) as response:
-            var = await response.json()
-            await call.message.edit_text(text=f'City: {var["name"]}\n'
-                                              f'Temperature: {var["main"]["temp"]}°C\n'
-                                              f'Feels like: {var["main"]["feels_like"]}°C\n'
-                                              f'Humidity: {var["main"]["humidity"]}%\n'
-                                              f'Pressure: {var["main"]["pressure"]}\n'
-                                              f'Wind: {var["wind"]["speed"]}\n'
-                                              f'Description: {var["weather"][0]["description"]}')
+            weather = await response.json()
+            await call.message.edit_text(text=f'City: {weather["name"]}\n'
+                                              f'Temperature: {weather["main"]["temp"]}°C\n'
+                                              f'Feels like: {weather["main"]["feels_like"]}°C\n'
+                                              f'Humidity: {weather["main"]["humidity"]}%\n'
+                                              f'Pressure: {weather["main"]["pressure"]}\n'
+                                              f'Wind: {weather["wind"]["speed"]}\n'
+                                              f'Description: {weather["weather"][0]["description"]}')
 
 
 @dp.callback_query_handler(text_contains='other_weather')
@@ -67,14 +68,14 @@ async def input_city(message: types.Message, state: FSMContext):
     """
     async with aiohttp.ClientSession() as session:
         async with session.get(config.WEATHER_API.format(message.text)) as response:
-            var = await response.json()
-            await message.answer(text=f'City: {var["name"]}\n'
-                                      f'Temperature: {var["main"]["temp"]}°C\n'
-                                      f'Feels like: {var["main"]["feels_like"]}°C\n'
-                                      f'Humidity: {var["main"]["humidity"]}%\n'
-                                      f'Pressure: {var["main"]["pressure"]}\n'
-                                      f'Wind: {var["wind"]["speed"]}\n'
-                                      f'Description: {var["weather"][0]["description"]}')
+            weather = await response.json()
+            await message.answer(text=f'City: {weather["name"]}\n'
+                                      f'Temperature: {weather["main"]["temp"]}°C\n'
+                                      f'Feels like: {weather["main"]["feels_like"]}°C\n'
+                                      f'Humidity: {weather["main"]["humidity"]}%\n'
+                                      f'Pressure: {weather["main"]["pressure"]}\n'
+                                      f'Wind: {weather["wind"]["speed"]}\n'
+                                      f'Description: {weather["weather"][0]["description"]}')
             await state.finish()
 
 
@@ -83,7 +84,7 @@ async def weather_options(message: types.Message):
     """
     Get a keyboard with options what exchange rates you want to know
     """
-    await message.reply("Choose currencies", reply_markup=currency_choise)
+    await message.reply("Choose currencies", reply_markup=currency_choice)
 
 
 @dp.callback_query_handler(text_startswith='currency')
@@ -93,10 +94,10 @@ async def currency_preset_option(call: types.CallbackQuery):
     """
     async with aiohttp.ClientSession() as session:
         async with session.get(config.CURRENCY_API.format(call.data.split("_")[1], call.data.split("_")[2])) as response:
-            var = await response.json()
-            await call.message.edit_text(text=f'From: {var["base_currency_name"]}\n'
-                                              f'To: {list(var["rates"].values())[0]["currency_name"]}\n'
-                                              f'Rate: {list(var["rates"].values())[0]["rate"]}')
+            rates = await response.json()
+            await call.message.edit_text(text=f'From: {rates["base_currency_name"]}\n'
+                                              f'To: {list(rates["rates"].values())[0]["currency_name"]}\n'
+                                              f'Rate: {list(rates["rates"].values())[0]["rate"]}')
 
 
 @dp.callback_query_handler(text_contains='other_currency')
@@ -116,11 +117,66 @@ async def input_city(message: types.Message, state: FSMContext):
     """
     async with aiohttp.ClientSession() as session:
         async with session.get(config.CURRENCY_API.format(message.text.split(' ')[0],message.text.split(' ')[1])) as response:
-            var = await response.json()
-            await message.answer(text=f'From: {var["base_currency_name"]}\n'
-                                              f'To: {list(var["rates"].values())[0]["currency_name"]}\n'
-                                              f'Rate: {list(var["rates"].values())[0]["rate"]}')
+            rates = await response.json()
+            await message.answer(text=f'From: {rates["base_currency_name"]}\n'
+                                      f'To: {list(rates["rates"].values())[0]["currency_name"]}\n'
+                                      f'Rate: {list(rates["rates"].values())[0]["rate"]}')
             await state.finish()
+
+
+@dp.message_handler(commands='transliteration')
+async def transliteration_options(message: types.Message):
+    """
+    Get a keyboard with options what kind of transliteration is required
+    """
+    await message.reply("Choose transliteration option", reply_markup=transliteration)
+
+
+@dp.callback_query_handler(text_endswith='transliteration')
+async def transliteration_option(call: types.CallbackQuery):
+    """
+    This handler sets a state, that depends on user's previous choice of a button.
+    Next handler will be chosen depends on settled state
+    """
+    if call.data.split('_')[0] == 'armenianeastern':
+        await states.Transliteration.armenianeastern.set()
+    elif call.data.split('_')[0] == 'armenianwestern':
+        await states.Transliteration.armenianwestern.set()
+    elif call.data.split('_')[0] == 'georgian':
+        await states.Transliteration.georgian.set()
+    else:
+        await call.message.edit_text(text="Smth goes wrong")
+    await call.message.edit_text(text="Enter a text")
+
+
+@dp.message_handler(state=states.Transliteration.armenianeastern)
+async def transliteration_armenian_eastern(message: types.Message, state: FSMContext):
+    """
+    This handler makes transliteration from latin to eastern armenian
+    """
+    text = await armenian_transliteration_eastern(message.text)
+    await message.answer(text=text)
+    await state.finish()
+
+
+@dp.message_handler(state=states.Transliteration.armenianwestern)
+async def transliteration_armenian_western(message: types.Message, state: FSMContext):
+    """
+    This handler makes transliteration from latin to western armenian
+    """
+    text = await armenian_transliteration_western(message.text)
+    await message.answer(text=text)
+    await state.finish()
+
+
+@dp.message_handler(state=states.Transliteration.georgian)
+async def transliterations_georgian(message: types.Message, state: FSMContext):
+    """
+    This handler makes transliteration from latin to georgian
+    """
+    text = await georgian_transliteration(message.text)
+    await message.answer(text=text)
+    await state.finish()
 
 
 if __name__ == '__main__':
