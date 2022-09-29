@@ -1,5 +1,18 @@
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
+menu = InlineKeyboardMarkup(inline_keyboard=[
+     [
+         InlineKeyboardButton(text="Weather", callback_data='Weather')
+     ],
+     [
+         InlineKeyboardButton(text="Exchange rates", callback_data='Exchange')
+     ],
+     [
+         InlineKeyboardButton(text="Transliteration", callback_data="TransliterationOptions")
+     ]
+ ])
+
+
 city_choice = InlineKeyboardMarkup(inline_keyboard=[
      [
          InlineKeyboardButton(text="Dilijan", callback_data='city_dilijan'),

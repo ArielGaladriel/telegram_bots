@@ -7,7 +7,7 @@ from aiogram import Bot, Dispatcher, executor, types
 from aiogram.dispatcher import FSMContext
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
-from keybords import city_choice, currency_choice, transliteration
+from keybords import city_choice, currency_choice, transliteration, menu
 from functions import armenian_transliteration_eastern, armenian_transliteration_western, georgian_transliteration
 
 logging.basicConfig(level=logging.INFO)
@@ -16,22 +16,21 @@ storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
 
 
-@dp.message_handler(commands='start')
-async def send_welcome(message: types.Message):
+@dp.message_handler(commands=['start','menu','back'])
+async def start_menu(message: types.Message):
     """
-    This handler will be called when user sends `/start` command
-    Welcome message, I'll rewrite this later
+    This function shows a menu (as a message)
     """
-    await message.reply("Hi!\nTest message")
+    await message.reply("Choose what do you want to know", reply_markup=menu)
 
 
-@dp.message_handler(commands='weather')
-async def weather_options(message: types.Message):
+@dp.callback_query_handler(text_contains='Weather')
+async def weather_options(call: types.CallbackQuery):
     """
     Get a keyboard with options from what city we want to learn information
     about weather
     """
-    await message.reply("Choose a city", reply_markup=city_choice)
+    await call.message.edit_text(text='Choose a city', reply_markup=city_choice)
 
 
 @dp.callback_query_handler(text_startswith='city')
@@ -49,6 +48,7 @@ async def weather_preset_option(call: types.CallbackQuery):
                                               f'Pressure: {weather["main"]["pressure"]}\n'
                                               f'Wind: {weather["wind"]["speed"]}\n'
                                               f'Description: {weather["weather"][0]["description"]}')
+            await start_menu(call.message)
 
 
 @dp.callback_query_handler(text_contains='other_weather')
@@ -77,14 +77,15 @@ async def input_city(message: types.Message, state: FSMContext):
                                       f'Wind: {weather["wind"]["speed"]}\n'
                                       f'Description: {weather["weather"][0]["description"]}')
             await state.finish()
+            await start_menu(message)
 
 
-@dp.message_handler(commands='exchange')
-async def weather_options(message: types.Message):
+@dp.callback_query_handler(text_contains='Exchange')
+async def exchange_options(call: types.CallbackQuery):
     """
     Get a keyboard with options what exchange rates you want to know
     """
-    await message.reply("Choose currencies", reply_markup=currency_choice)
+    await call.message.edit_text("Choose a currency pair", reply_markup=currency_choice)
 
 
 @dp.callback_query_handler(text_startswith='currency')
@@ -98,10 +99,11 @@ async def currency_preset_option(call: types.CallbackQuery):
             await call.message.edit_text(text=f'From: {rates["base_currency_name"]}\n'
                                               f'To: {list(rates["rates"].values())[0]["currency_name"]}\n'
                                               f'Rate: {list(rates["rates"].values())[0]["rate"]}')
+            await start_menu(call.message)
 
 
 @dp.callback_query_handler(text_contains='other_currency')
-async def weather_other_option(call: types.CallbackQuery):
+async def currency_other_option(call: types.CallbackQuery):
     """
     If a user has selected an 'Other' option, this handler sets a state for another handler,
     that allows input custom currency pair
@@ -111,7 +113,7 @@ async def weather_other_option(call: types.CallbackQuery):
 
 
 @dp.message_handler(state=states.Country.country)
-async def input_city(message: types.Message, state: FSMContext):
+async def input_country(message: types.Message, state: FSMContext):
     """
     Get information about exchange rate between a custom currency pair
     """
@@ -122,14 +124,15 @@ async def input_city(message: types.Message, state: FSMContext):
                                       f'To: {list(rates["rates"].values())[0]["currency_name"]}\n'
                                       f'Rate: {list(rates["rates"].values())[0]["rate"]}')
             await state.finish()
+            await start_menu(message)
 
 
-@dp.message_handler(commands='transliteration')
-async def transliteration_options(message: types.Message):
+@dp.callback_query_handler(text_contains='TransliterationOptions')
+async def transliteration_options(call: types.CallbackQuery):
     """
     Get a keyboard with options what kind of transliteration is required
     """
-    await message.reply("Choose transliteration option", reply_markup=transliteration)
+    await call.message.edit_text("Choose transliteration option", reply_markup=transliteration)
 
 
 @dp.callback_query_handler(text_endswith='transliteration')
@@ -157,6 +160,8 @@ async def transliteration_armenian_eastern(message: types.Message, state: FSMCon
     text = await armenian_transliteration_eastern(message.text)
     await message.answer(text=text)
     await state.finish()
+    await start_menu(message)
+
 
 
 @dp.message_handler(state=states.Transliteration.armenianwestern)
@@ -167,6 +172,7 @@ async def transliteration_armenian_western(message: types.Message, state: FSMCon
     text = await armenian_transliteration_western(message.text)
     await message.answer(text=text)
     await state.finish()
+    await start_menu(message)
 
 
 @dp.message_handler(state=states.Transliteration.georgian)
@@ -177,6 +183,15 @@ async def transliterations_georgian(message: types.Message, state: FSMContext):
     text = await georgian_transliteration(message.text)
     await message.answer(text=text)
     await state.finish()
+    await start_menu(message)
+
+
+@dp.callback_query_handler(text_contains='back', state="*")
+async def go_back_to_menu(call: types.CallbackQuery):
+    """
+    Go back to a menu
+    """
+    await call.message.edit_text("Choose what do you want to know", reply_markup=menu)
 
 
 if __name__ == '__main__':
