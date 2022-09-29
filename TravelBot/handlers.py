@@ -1,19 +1,13 @@
-import logging
-import config
 import aiohttp
 import states
 
-from aiogram import Bot, Dispatcher, executor, types
+from aiogram import types
 from aiogram.dispatcher import FSMContext
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
 
+import config
 from keybords import city_choice, currency_choice, transliteration, menu
 from functions import armenian_transliteration_eastern, armenian_transliteration_western, georgian_transliteration
-
-logging.basicConfig(level=logging.INFO)
-bot = Bot(token=config.BOT_TOKEN)
-storage = MemoryStorage()
-dp = Dispatcher(bot, storage=storage)
+from loader import dp
 
 
 @dp.message_handler(commands=['start','menu','back'])
@@ -163,7 +157,6 @@ async def transliteration_armenian_eastern(message: types.Message, state: FSMCon
     await start_menu(message)
 
 
-
 @dp.message_handler(state=states.Transliteration.armenianwestern)
 async def transliteration_armenian_western(message: types.Message, state: FSMContext):
     """
@@ -192,7 +185,3 @@ async def go_back_to_menu(call: types.CallbackQuery):
     Go back to a menu
     """
     await call.message.edit_text("Choose what do you want to know", reply_markup=menu)
-
-
-if __name__ == '__main__':
-    executor.start_polling(dp, skip_updates=True)

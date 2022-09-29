@@ -66,7 +66,7 @@ async def georgian_transliteration(text: str):
     """
     Transliteration from latin to georgian
     """
-    text = text.replace('k\'', 'კ').replace('p\'', 'პ').replace('zh', 'ჟ').replace('t\'', 'ტ').\
+    text = text.lower().replace('k\'', 'კ').replace('p\'', 'პ').replace('zh', 'ჟ').replace('t\'', 'ტ').\
         replace('gh', 'ღ').replace('sh', 'შ').replace('ch', 'ჩ').replace('ts', 'ც').\
         replace('dz', 'ძ').replace('ts\'', 'წ').replace('ch\'', 'ჭ').replace('kh', 'ხ')
     for i in text:
