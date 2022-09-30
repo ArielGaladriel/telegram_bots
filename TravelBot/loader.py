@@ -15,10 +15,6 @@ async def on_startup(dispatcher):
     await bot.set_webhook(config.WEBHOOK_URL, drop_pending_updates=True)
 
 
-async def on_shutdown(dispatcher):
-    await bot.delete_webhook()
-
-
 if __name__ == '__main__':
     from handlers import dp
     start_webhook(
@@ -26,7 +22,6 @@ if __name__ == '__main__':
         webhook_path=config.WEBHOOK_PATH,
         skip_updates=True,
         on_startup=on_startup,
-        on_shutdown=on_shutdown,
         host=config.WEBAPP_HOST,
         port=config.WEBAPP_PORT,
     )
